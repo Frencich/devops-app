@@ -1,0 +1,17 @@
+# ----Stage 1: builder----
+# Immagine jdk presa dalla repo di maven (così c'è anche installato maven per poter eseguire poi i comandi di build package)
+FROM maven:3.9-eclipse-temurin-21 AS builder
+WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
+
+# ----Stage 2: runtime----
+# Immagine jre presa dalla repo di eclipse temurin
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+RUN addgroup -S app && adduser -S pippo -G app
+COPY --from=builder /app/target/devops-app-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8080
+USER pippo
+# Da qui in poi l'utente non è più root ma è pippo
+CMD ["java","-jar","app.jar"]
