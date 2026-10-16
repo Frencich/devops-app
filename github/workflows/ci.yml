@@ -1,0 +1,22 @@
+name: CI/CD
+# Condizioni di trigger
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch: # Serve a permettere il trigger manuale
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7 # checkout@v7 è un progetto di github (actions è la repo di github)
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Build e test
+        run: ./mvnw -B verify
+
