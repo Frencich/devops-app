@@ -25,7 +25,7 @@ jobs:
 
   docker: # nome secondo job
     needs: build-test # parte solo dopo il job "build-test"
-    if: github.event_name != 'pull_request" # non si trigghera nelle merge request
+    if: github.event_name != 'pull_request' # non si trigghera nelle merge request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
