@@ -7,8 +7,11 @@ on:
     branches: [develop, main]
   workflow_dispatch: # Serve a permettere il trigger manuale
 
+env:
+  IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/devops-app # nome dell'immagine
+
 jobs:
-  build-test:
+  build-test: # nome primo job
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7 # checkout@v7 è un progetto di github (actions è la repo di github)
@@ -19,4 +22,32 @@ jobs:
           cache: maven
       - name: Build e test
         run: ./mvnw -B verify
+
+  docker: # nome secondo job
+    needs: build-test # parte solo dopo il job "build-test"
+    if: github.event_name != 'pull_request" # non si trigghera nelle merge request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build docker image
+        run:
+          BRANCH_TAG=$(echo "$GITHUB_REF_NAME" | tr '/' '-') # dichiara e inizializza una variabile (con trim che trasforma / in -)
+          docker build -f Dockerfile_v2 -t "$IMAGE:$GITHUB_SHA" -t "$IMAGE:$BRANCH_TAG" .
+      - name: Scan Docker Scout
+        uses: docker/scout-action@v1
+        with:
+          command: cves # elenca le vulnerabilità note dell'immagine appena generato
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          only-severities: critical
+          only-fixed: true
+          exit-code: true
+      - name: Push su Docker hub
+        run: docker push --all-tags "$IMAGE"
+
+
+
 
